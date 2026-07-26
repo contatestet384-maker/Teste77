@@ -19,3 +19,105 @@ button{padding:12px 20px;font-size:16px;cursor:pointer}
 </div>
 </body>
 </html>
+const express = require("express");
+const cors = require("cors");
+const { MercadoPagoConfig, Preference } = require("mercadopago");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+
+// COLOQUE SEU TOKEN AQUI
+const client = new MercadoPagoConfig({
+    accessToken: "SEU_TOKEN_MERCADO_PAGO"
+});
+
+
+// Página da loja
+app.get("/", (req,res)=>{
+    res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Minha Loja</title>
+        <meta charset="UTF-8">
+    </head>
+
+    <body>
+
+        <h1>Produto Exemplo</h1>
+        <h2>R$ 100,00</h2>
+
+        <button onclick="comprar()">
+            Comprar agora
+        </button>
+
+
+        <script>
+        function comprar(){
+
+            fetch("/pagamento", {
+                method:"POST"
+            })
+
+            .then(res=>res.json())
+
+            .then(data=>{
+                window.location.href=data.link;
+            });
+
+        }
+        </script>
+
+
+    </body>
+    </html>
+    `);
+});
+
+
+// Criar checkout
+app.post("/pagamento", async(req,res)=>{
+
+    const preference = new Preference(client);
+
+
+    const pagamento = await preference.create({
+
+        body:{
+
+            items:[
+                {
+                    title:"Produto Exemplo",
+                    quantity:1,
+                    unit_price:100
+                }
+            ],
+
+            back_urls:{
+                success:"https://seusite.com/sucesso",
+                failure:"https://seusite.com/erro"
+            }
+
+        }
+
+    });
+
+
+    res.json({
+        link: pagamento.init_point
+    });
+
+});
+
+
+
+app.listen(3000,()=>{
+    console.log("Loja rodando em http://localhost:3000");
+});
+npm init -y
+npm install express cors mercadopago
+node app.js
+http://localhost:3000
